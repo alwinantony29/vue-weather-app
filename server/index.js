@@ -1,10 +1,13 @@
 require("dotenv").config();
+const cors = require("cors");
 const express = require("express");
 const app = express();
 const User = require("./api/user/user.controller");
 const connectDB = require("./config/database");
 
 app.use(express.json());
+app.use(cors());
+
 app.get("/", (_, res) => res.send("Hello from server"));
 app.use("/users", User);
 
