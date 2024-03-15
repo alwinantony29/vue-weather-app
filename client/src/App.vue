@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-gradient-to-br from-pink-300 to-blue-300 h-screen">
-    <router-view></router-view>
+  <div class="min-h-screen p-10 bg-gradient-to-r from-teal-400 to-purple-400">
+    <router-view />
   </div>
 </template>
 
