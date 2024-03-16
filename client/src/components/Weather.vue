@@ -1,16 +1,17 @@
 <template>
-    <div class="flex gap-3 h-[35svh] mt-5 md:mt-10 md:flex-row flex-col">
-        <div class=" shadow md:w-3/4 p-3 flex flex-col h-[1] rounded bg-white bg-opacity-20 justify-between">
+    <div class="flex font-semibold gap-3 h-[38svh] mt-5 lg:mt-10 lg:flex-row flex-col">
+        <div class=" shadow lg:w-3/4 p-3 flex flex-col h-[1] rounded bg-white bg-opacity-20 justify-between">
             <div class="flex justify-between items-center">
-                <p>{{ todaysWeather.date }}</p>
+                <p class="lg:text-2xl">{{ todaysWeather.date }}</p>
                 <img :src="getWeatherIconUrl(todaysWeather.weather.weather[0].icon)" alt="weather"
                     class="w-12 h-12 mr-[-10px]">
             </div>
             <div class="flex justify-between mt-2 items-end w-full">
                 <div class="flex flex-col gap-2">
-                    <p class="text-6xl">{{ Math.round(dailyWeather[0].main.temp) }} ℃</p>
+                    <p class="text-6xl lg:text-7xl">{{ Math.round(dailyWeather[0].main.temp) }} ℃</p>
                     <p>Feels like {{ Math.round(dailyWeather[0].main.feels_like) }}℃</p>
                     <p>{{ location }}</p>
+                    <p>{{ DateTime.now().toFormat('EEE dd MMM h mma ') }}</p>
                 </div>
                 <div class="text-right items-end flex flex-col gap-2">
                     <button class="bg-white bg-opacity-20 w-8 h-8 text-xl text-center rounded-full "
@@ -25,11 +26,11 @@
             </div>
         </div>
         <div v-for="weatherData in Object.values(categorizedWeather).slice(1)" :key="weatherData.date"
-            class="h-[1] shadow md:w-1/6 rounded bg-white bg-opacity-20 p-3 flex md:flex-col justify-between items-center">
-            <p class="w-10">{{ weatherData?.date }}</p>
+            class="h-[1] shadow lg:w-1/6 rounded bg-white bg-opacity-20 p-3 flex lg:flex-col justify-between items-center">
+            <p class="w-10 ">{{ weatherData?.date }}</p>
             <p class="text-sm w-20 text-center capitalize">{{ weatherData?.weather?.weather[0].description }}</p>
             <img :src="getWeatherIconUrl(weatherData?.weather?.weather[0].icon)" alt="weather"
-                class="w-12 h-12 order-last md:order-first">
+                class="w-12 h-12 order-last lg:order-first">
             <p>{{ Math.round(weatherData?.weather?.main?.temp) }} ℃</p>
 
         </div>
@@ -37,7 +38,7 @@
 </template>
 
 <script setup>
-import { defineProps, ref } from 'vue';
+import { defineProps, ref, watchEffect } from 'vue';
 import { DateTime } from "luxon";
 import { getWeatherIconUrl, getWeatherOfSameTime } from '../utils';
 
@@ -48,24 +49,39 @@ const props = defineProps({
     }
 });
 const isSaved = ref(false)
+const categorizedWeather = ref({});
+const todaysWeather = ref({});
+const weatherForecast = ref({});
+const location = ref('');
+const dailyWeather = ref(null);
 
-const { weatherForecast } = props
-const location = weatherForecast.location || `${weatherForecast.city.name} ${weatherForecast.city.country}`
-const dailyWeather = weatherForecast?.list
+watchEffect(() => {
+    weatherForecast.value = props.weatherForecast
+    location.value = props.weatherForecast.location || `${props.weatherForecast.city.name} ${props.weatherForecast.city.country}`;
+    dailyWeather.value = props.weatherForecast?.list
 
-let categorizedWeather = dailyWeather.reduce((acc, curr) => {
-    let isToday = false
-    const date = DateTime.fromFormat(curr.dt_txt, 'yyyy-MM-dd HH:mm:ss');
-    if (date.hasSame(DateTime.now(), 'day')) isToday = true
-    const day = date.startOf('day');
-    if (!acc[day]) {
-        acc[day] = { date: isToday ? 'Today' : day.toFormat('EEE'), weathers: [] };
-    }
-    acc[day].weathers.push(curr);
-    return acc;
-}, {})
-categorizedWeather = getWeatherOfSameTime(categorizedWeather)
-const todaysWeather = Object.values(categorizedWeather)[0]
+    categorizedWeather.value = dailyWeather.value.reduce((acc, curr) => {
+        let isToday = false
+        const date = DateTime.fromFormat(curr.dt_txt, 'yyyy-MM-dd HH:mm:ss');
+        if (date.hasSame(DateTime.now(), 'day')) isToday = true
+        const day = date.startOf('day');
+        if (!acc[day]) {
+            acc[day] = { date: isToday ? 'Today' : day.toFormat('EEE'), weathers: [] };
+        }
+        acc[day].weathers.push(curr);
+        return acc;
+    }, {})
+
+    categorizedWeather.value = getWeatherOfSameTime(categorizedWeather.value)
+    todaysWeather.value = Object.values(categorizedWeather.value)[0]
+
+})
+
+
+// const location = weatherForecast.value.location || `${weatherForecast.value.city.name} ${weatherForecast.value.city.country}`
+
+
+
 
 const toggleSaveLocation = () => {
     isSaved.value = !isSaved.value

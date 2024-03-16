@@ -10,7 +10,9 @@
                     @click="getCurrentLocationWeather"></i>
                 <i v-else @click="clearSearch" class="fa-solid fa-xmark absolute top-3 right-1"></i>
             </div>
-            <p v-if="errorMessage" class="text-red-500 absolute top-10 p-2">{{ errorMessage }}</p>
+            <p v-if="errorMessage"
+                class="text-red-500 absolute top-14 p-2 left-0 w-full bg-white bg-opacity-25 backdrop-blur-md">{{
+                        errorMessage }}</p>
             <ul v-if="querySuggestions.length"
                 class="absolute bg-white bg-opacity-30 backdrop-blur-md  top-[3.5rem] text-white w-full left-0 ">
                 <p v-if="!errorMessage && querySuggestions?.length === 0 && query.trim()">No results match your search
@@ -24,7 +26,7 @@
                 </template>
             </ul>
         </div>
-        <Weather v-if="weatherForecast" :weatherForecast="weatherForecast" />
+        <Weather v-if="weatherForecast && !errorMessage" :weatherForecast="weatherForecast" />
     </main>
 </template>
 
@@ -88,7 +90,7 @@ const clearSearch = () => {
 const handleListClick = (suggestion) => {
     query.value = suggestion
     currentWeatherLocation.value = suggestion
-    getSearchSuggestions()
+    querySuggestions.value = []
     getSearchResults()
 }
 async function getCurrentLocationWeather() {
