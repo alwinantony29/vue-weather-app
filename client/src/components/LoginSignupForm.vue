@@ -1,7 +1,7 @@
 <template>
-  <div class="flex justify-center items-center h-screen">
+  <div class="flex justify-center items-center h-[100svh]">
     <form
-      class="w-full max-w-sm h-[80%] p-7 py-10 backdrop-blur-3xl flex flex-col rounded-xl justify-center bg-white bg-opacity-15"
+      class="w-full max-w-sm h-[60%] p-7 py-10 backdrop-blur-3xl flex flex-col rounded-xl justify-center bg-white bg-opacity-15"
       @submit.prevent="handleSubmit"
       :class="isLogin ? 'max-h-80' : 'h-[80%] max-h-96'">
       <div v-if="!isLogin" class="mb-4">
@@ -73,6 +73,7 @@ export default {
         console.log('login done');
         this.$router.push('/home')
       } catch (e) {
+        alert('server error')
         console.log(e)
       }
     },
