@@ -8,4 +8,4 @@
 - cd server 
 - npm i
 - npm run dev
-- backend is hosted at localhost:5000
+- backend is hosted at localhost:3001
