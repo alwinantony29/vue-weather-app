@@ -2,8 +2,7 @@
   <div class="flex justify-center items-center h-[100svh]">
     <form
       class="w-full max-w-sm h-[60%] p-7 py-10 backdrop-blur-3xl flex flex-col rounded-xl justify-center bg-white bg-opacity-15"
-      @submit.prevent="handleSubmit"
-      :class="isLogin ? 'max-h-80' : 'h-[80%] max-h-96'">
+      @submit.prevent="handleSubmit" :class="isLogin ? 'max-h-80' : 'h-[80%] max-h-96'">
       <div v-if="!isLogin" class="mb-4">
         <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Name</label>
         <input type="text" id="username" v-model="username"
@@ -35,52 +34,49 @@
   </div>
 </template>
 
-<script>
-import axiosInstance from '../config/axios'
-export default {
-  data() {
-    return {
-      isLogin: true,
-      username: '',
-      email: '',
-      password: ''
-    };
-  },
-  methods: {
-    async handleSubmit() {
-      if (this.isLogin) await this.login()
-      else await this.signup()
-    },
-    async signup() {
-      try {
-        console.log("signup call")
-        const res = await axiosInstance.post('/users/signup', { userName: this.username, email: this.email, password: this.password })
-        console.log(res.data)
-        console.log('signed up');
-        this.$router.push('/home')
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    async login() {
-      try {
-        console.log('login call')
-        const res = await axiosInstance.post('users/signin',
-          {
-            email: this.email, password: this.password
-          })
-        console.log(res.data);
-        console.log('login done');
-        this.$router.push('/home')
-      } catch (e) {
-        alert('server error')
-        console.log(e)
-      }
-    },
-    changeForm() {
-      this.isLogin = !this.isLogin
-    },
+<script setup>
+import axiosInstance from '../config/axios';
+import { useRouter } from 'vue-router';
+import { ref, } from 'vue';
+import { useStore } from 'vuex';
 
+const isLogin = ref(true);
+const username = ref('');
+const email = ref('');
+const password = ref('');
+const store = useStore();
+const router = useRouter();
+
+const handleSubmit = async () => {
+  if (isLogin.value) await login();
+  else await signup();
+};
+
+const signup = async () => {
+  try {
+    console.log("signup call");
+    const { data } = await axiosInstance.post('/users/signup', { userName: username.value, email: email.value, password: password.value });
+    store.commit('setUser', data.user);
+    router.push('/home');
+  } catch (error) {
+    alert(error.message)
+    console.error(error);
   }
-}
+};
+
+const login = async () => {
+  try {
+    const { data } = await axiosInstance.post('users/signin', { email: email.value, password: password.value });
+    sessionStorage.setItem('token', data.token);
+    store.commit('setUser', data.user);
+    router.push('/home');
+  } catch (e) {
+    alert('server error');
+    console.log(e);
+  }
+};
+
+const changeForm = () => {
+  isLogin.value = !isLogin.value;
+};
 </script>

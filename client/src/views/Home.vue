@@ -31,10 +31,14 @@
 </template>
 
 <script setup>
-import { ref, } from "vue";
+import { computed, ref, } from "vue";
 import axios from "axios";
 import Weather from "../components/Weather.vue";
+import { useStore } from "vuex";
 
+
+const store = useStore();
+const user = computed(() => store.getters.getUser);
 const query = ref('')
 const queryTimeout = ref(null)
 const querySuggestions = ref([])

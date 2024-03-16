@@ -3,21 +3,20 @@ const jwt = require("jsonwebtoken");
 const userModel = require("./user.model");
 
 module.exports = {
-
   verifyToken: (req, res, next) => {
-    const token = req.headers['authorization']
+    const token = req.headers["authorization"];
     if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
+      return res.status(401).json({ message: "No token provided" });
     }
-    jwt.verify(token.split(' ')[1], process.env.JWT_KEY, (err, decoded) => {
+    jwt.verify(token.split(" ")[1], process.env.JWT_KEY, (err, decoded) => {
       if (err) {
         console.log("token verification error: ", token);
-        return res.status(401).json({ message: 'Invalid token' });
+        return res.status(401).json({ message: "Invalid token" });
       }
       req.user = decoded;
       console.log("verified token", req.user);
       next();
-    })
+    });
   },
   async handleSignup(req, res) {
     try {
@@ -33,7 +32,15 @@ module.exports = {
         password: hashedPassword,
       });
       await newUser.save();
-      res.status(201).json({ message: "User registered successfully" });
+      const token = jwt.sign({ userId: newUser._id }, process.env.JWT_KEY, {
+        expiresIn: "1d",
+      });
+      const { password: ps, ...cleanedUser } = newUser.toObject();
+      res.status(201).json({
+        user: cleanedUser,
+        token,
+        message: "User registered successfully",
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server Error" });
@@ -42,7 +49,7 @@ module.exports = {
   async handleSignIn(req, res) {
     try {
       const { email, password } = req.body;
-      const user = await userModel.findOne({ email });
+      const user = await userModel.findOne({ email }).lean();
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -53,7 +60,8 @@ module.exports = {
       const token = jwt.sign({ userId: user._id }, process.env.JWT_KEY, {
         expiresIn: "1d",
       });
-      res.status(200).json({ token });
+      const { password: ps, ...cleanUser } = user;
+      res.status(200).json({ token, user: cleanUser });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server Error" });
