@@ -1,61 +1,119 @@
 <template>
-    <main class="text-white">
-        <div class="h-12 flex relative bg-white bg-opacity-20 rounded  w-full px-5 py-3">
-            <input type="text" placeholder="Search for a city or state"
-                class="w-full text-white bg-transparent border-b border-white focus:border-opacity-70 focus:outline-none"
-                v-model="query" @input="getSearchResults">
-            <ul class="absolute top-[2.5rem] text-white w-full left-0 py-3 px-5 ">
-                <p v-if="searchError">Sorry, Something went wrong please try again</p>
-                <li v-for="suggestion in querySuggestion" :key="suggestion" class="cursor-pointer"
-                    @click="handleListClick(suggestion)">
-                    {{ suggestion }}
-                </li>
+    <main class="text-white p-10">
+        <div class="h-12 flex relative  bg-opacity-20 rounded w-full">
+
+            <div class="w-full">
+                <input type="text" placeholder="Search for a city or state"
+                    class="w-full p-2 text-white bg-transparent border-b border-white focus:border-opacity-70 focus:outline-none"
+                    v-model="query" @input="getSearchSuggestions">
+                <i v-if="!query" class="fa-solid fa-location-crosshairs absolute right-1 top-3"
+                    @click="getCurrentLocationWeather"></i>
+                <i v-else @click="clearSearch" class="fa-solid fa-xmark absolute top-3 right-1"></i>
+            </div>
+            <p v-if="errorMessage" class="text-red-500 absolute top-10 p-2">{{ errorMessage }}</p>
+            <ul v-if="querySuggestions.length"
+                class="absolute bg-white bg-opacity-30 backdrop-blur-md  top-[3.5rem] text-white w-full left-0 ">
+                <p v-if="!errorMessage && querySuggestions?.length === 0 && query.trim()">No results match your search
+                </p>
+
+                <template v-else>
+                    <li v-for="suggestion in querySuggestions" :key="suggestion"
+                        class="cursor-pointer hover:backdrop-blur-2xl p-2" @click="handleListClick(suggestion)">
+                        {{ suggestion }}
+                    </li>
+                </template>
             </ul>
         </div>
+        <Weather v-if="weatherForecast" :weatherForecast="weatherForecast" />
     </main>
 </template>
 
 <script setup>
-import { ref } from "vue";
-// import SearchBar from "../components/SearchBar.vue";
+import { ref, } from "vue";
 import axios from "axios";
+import Weather from "../components/Weather.vue";
 
 const query = ref('')
 const queryTimeout = ref(null)
-const querySuggestion = ref(null)
-const searchError = ref(null)
+const querySuggestions = ref([])
 const limit = 5
 const openWeatherApiKey = import.meta.env.VITE_WEATHER_API_KEY
+const currentWeatherLocation = ref(null)
+const errorMessage = ref(null)
+const weatherForecast = ref(null)
+const defaultErrorMsg = 'Something went wrong please try again.'
 
-const getSearchResults = () => {
+const getSearchSuggestions = () => {
     clearTimeout(queryTimeout.value)
     queryTimeout.value = setTimeout(async () => {
-        if (searchError.value) searchError.value = false
+        if (errorMessage.value) errorMessage.value = ''
         if (query.value === "") {
-            querySuggestion.value = []
-            return
-        }
+            querySuggestions.value = []
+        } else
+            try {
+                const { data } = await axios.get(`http://api.openweathermap.org/geo/1.0/direct?q=${query.value}&limit=${limit}&appid=${openWeatherApiKey}`)
 
-        try {
-            const res = await axios.get(`http://api.openweathermap.org/geo/1.0/direct?q=${query.value}&limit=${limit}&appid=${openWeatherApiKey}`)
-            querySuggestion.value = new Set(res.data.map(location => {
-                let suggestion = ''
-                if (location.name) suggestion += (location.name)
-                if (location.state) suggestion += (", " + location.state)
-                if (location.country) suggestion += (", " + location.country)
-                return suggestion
-            }))
-        } catch (error) {
-            console.error(error);
-            searchError.value = true
-        }
-        return
+                querySuggestions.value = [...new Set(data.map(location => {
+                    let suggestion = ''
+                    if (location.name) suggestion += (location.name)
+                    if (location.state) suggestion += (", " + location.state)
+                    if (location.country) suggestion += (", " + location.country)
+                    if (suggestion !== query.value)
+                        return suggestion
 
+                }))].filter(item => item)
+                errorMessage.value = null
+            } catch (error) {
+                errorMessage.value = error.message || defaultErrorMsg
+                console.log(errorMessage.value);
+            }
     }, 300)
+}
+const getSearchResults = async () => {
+    try {
+        const { data } = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${query.value}&appid=${openWeatherApiKey}&units=metric`)
+        weatherForecast.value = data
+        console.log(weatherForecast.value);
+        errorMessage.value = null
+    } catch (error) {
+        errorMessage.value = error.message || defaultErrorMsg
+    }
+}
+const clearSearch = () => {
+    query.value = ''
+    querySuggestions.value = []
+    errorMessage.value = null
+
 }
 const handleListClick = (suggestion) => {
     query.value = suggestion
+    currentWeatherLocation.value = suggestion
+    getSearchSuggestions()
     getSearchResults()
+}
+async function getCurrentLocationWeather() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async position => {
+                if (!position) alert('no pos')
+                try {
+                    const { data } = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?&lat=${position.coords.latitude}&lon=${position.coords.longitude}&appid=${openWeatherApiKey}&units=metric`)
+                    console.log(data);
+                    weatherForecast.value = data
+                    errorMessage.value = null;
+                } catch (error) {
+                    console.log(error);
+                    alert('error')
+                }
+            },
+            error => {
+                alert(error.message || 'Error')
+                errorMessage.value = `Error: ${error.message}`;
+            }
+        );
+    } else {
+        errorMessage.value = 'Geolocation is not supported by this browser.';
+    }
 }
 
 </script>
