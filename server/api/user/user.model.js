@@ -2,12 +2,12 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-  email: { type: String, required: true, unique: true },
-  userName: { type: String, required: true },
+  email: { type: String, required: [true, "Email is required"], unique: true },
+  userName: { type: String, required: [true, "Username is required"] },
   password: { type: String, required: true },
-  locations: Array,
+  locations: [{ type: String, required: true }],
   notificationPreference: {
-    emailIds: Array,
+    emailIds: [{ type: String, required: true }],
     subject: String,
     message: String,
     time: String,
